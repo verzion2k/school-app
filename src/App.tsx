@@ -1,10 +1,15 @@
 import React from "react";
-import { Student, StudentClass, STUDENTS, STUDENT_CLASSES } from "./mockData";
+import { Student, StudentClass, STUDENTS } from "./mockData";
 import List from "./components/list/List";
 import Form from "./components/form/Form";
 import { IconButton, TextField } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+
+export interface FilterInput {
+  studentName: string;
+  className: string;
+}
 
 function App() {
   const [students, setStudents] = React.useState<Student[]>(STUDENTS);
@@ -13,6 +18,17 @@ function App() {
       new Map(students.map((item) => [item.class["name"], item.class])).values()
     ),
   ]);
+
+  const [filterInput, setFilterInput] = React.useReducer(
+    (state: FilterInput, newState: Partial<FilterInput>) => ({
+      ...state,
+      ...newState,
+    }),
+    {
+      studentName: "",
+      className: "",
+    }
+  );
 
   React.useEffect(() => {
     setStudents((state) =>
@@ -57,7 +73,7 @@ function App() {
       createNewClass(newStudent.class);
       setStudents(sortedList);
     },
-    [students, sortByStudentName]
+    [students, sortByStudentName, createNewClass]
   );
 
   const deleteStudent = React.useCallback(
@@ -70,7 +86,7 @@ function App() {
 
   const toggleClassEditing = React.useCallback(
     (id: string) => {
-/*       const newList = schoolClasses.map((item) => {
+      const newList = schoolClasses.map((item) => {
         if (item.id === id) {
           const updatedItem = {
             ...item,
@@ -82,27 +98,52 @@ function App() {
         return item;
       });
 
-      setSchoolClasses(newList); */
+      const newSortedList = sortByStudentSchoolName(newList);
+
+      setSchoolClasses(newSortedList);
     },
-    []
+    [schoolClasses, sortByStudentSchoolName]
   );
 
-  const handleEditClassChange = React.useCallback((id: string, event: any) => {
-    const newList = schoolClasses.map((item) => {
-      if (item.id === id) {
-        const updatedItem = {
-          ...item,
-          name: event.target.value,
-          isEditing: true,
-        };
+  const handleEditClassChange = React.useCallback(
+    (
+      studentClass: StudentClass,
+      event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
+    ) => {
+      const newClassList = schoolClasses.map((item) => {
+        if (item.id === studentClass.id) {
+          const updatedItem = {
+            ...item,
+            name: event.target.value,
+            isEditing: true,
+          };
 
-        return updatedItem;
-      }
-      return item;
-    });
+          return updatedItem;
+        }
+        return item;
+      });
 
-    setSchoolClasses(newList);
-  }, []);
+      const newStudentList = students.map((item) => {
+        if (item.class.name === studentClass.name) {
+          const updatedItem = {
+            ...item,
+            class: {
+              ...item.class,
+              name: event.target.value,
+              isEditing: true,
+            },
+          };
+
+          return updatedItem;
+        }
+        return item;
+      });
+
+      setSchoolClasses(newClassList);
+      setStudents(newStudentList);
+    },
+    [schoolClasses, students]
+  );
 
   const handleEditClassOnEnter = React.useCallback(
     (id: string, event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -113,8 +154,6 @@ function App() {
     [toggleClassEditing]
   );
 
-  const editName = React.useCallback(() => {}, []);
-
   const removeStudentClass = React.useCallback(
     (id: string) => {
       const newList = schoolClasses.filter((item) => item.id !== id);
@@ -122,6 +161,50 @@ function App() {
     },
     [schoolClasses]
   );
+
+  const renderDeleteIcon = React.useCallback(
+    (schoolClass: StudentClass) => {
+      const isClassEmpty = students.some(
+        (e) => e.class.name === schoolClass.name
+      );
+
+      return (
+        !isClassEmpty && (
+          <IconButton onClick={() => removeStudentClass(schoolClass.id)}>
+            <DeleteForeverIcon />
+          </IconButton>
+        )
+      );
+    },
+    [students, removeStudentClass]
+  );
+
+  const handleFilterStudents = React.useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+      const { name, value } = event.target;
+      setFilterInput({ [name]: value });
+    },
+    []
+  );
+
+  const filterStudents = React.useCallback(
+    (list: Student[]) => {
+      return list.filter(
+        (item) =>
+          item.name
+            .toLowerCase()
+            .includes(filterInput.studentName.toLowerCase()) &&
+          item.class.name
+            .toLowerCase()
+            .includes(filterInput.className.toLowerCase())
+      );
+    },
+    [filterInput.className, filterInput.studentName]
+  );
+
+  const classChange = React.useCallback((id: string) => {
+    console.log(id);
+  }, []);
 
   return (
     <div style={{ padding: "20px" }}>
@@ -136,11 +219,11 @@ function App() {
               label="Student name"
               variant="outlined"
               sx={{ m: 1 }}
-              onChange={(event) => handleEditClassChange(schoolClass.id, event)}
-              /*               onKeyDown={(event) =>
+              onChange={(event) => handleEditClassChange(schoolClass, event)}
+              onKeyDown={(event) =>
                 handleEditClassOnEnter(schoolClass.id, event)
               }
-              onBlur={() => toggleClassEditing(schoolClass.id)} */
+              onBlur={() => toggleClassEditing(schoolClass.id)}
               value={schoolClass.name}
             />
           ) : (
@@ -149,13 +232,34 @@ function App() {
           <IconButton onClick={() => toggleClassEditing(schoolClass.id)}>
             <EditIcon />
           </IconButton>
-          <IconButton onClick={() => removeStudentClass(schoolClass.id)}>
-            <DeleteForeverIcon />
-          </IconButton>
+          {renderDeleteIcon(schoolClass)}
         </div>
       ))}
 
-      <List students={students} deleteStudent={deleteStudent} />
+      <TextField
+        id="studentName"
+        name="studentName"
+        label="Search for Student"
+        variant="outlined"
+        sx={{ m: 1 }}
+        onChange={handleFilterStudents}
+        value={filterInput.studentName}
+      />
+
+      <TextField
+        id="className"
+        name="className"
+        label="Search for Class"
+        variant="outlined"
+        sx={{ m: 1 }}
+        onChange={handleFilterStudents}
+        value={filterInput.className}
+      />
+      <List
+        students={filterStudents(students)}
+        deleteStudent={deleteStudent}
+        classChange={classChange}
+      />
     </div>
   );
 }

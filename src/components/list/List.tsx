@@ -13,15 +13,21 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 export interface Props {
   students: Student[];
   deleteStudent: (id: string) => void;
+  classChange: (id: string) => void;
 }
 
-const List: React.FunctionComponent<Props> = ({ students, deleteStudent }) => {
+const List: React.FunctionComponent<Props> = ({
+  students,
+  deleteStudent,
+  classChange,
+}) => {
   const handleDeleteStudent = React.useCallback(
     (id: string) => {
       deleteStudent(id);
     },
     [deleteStudent]
   );
+
   return (
     <TableContainer component={Paper}>
       <Table>

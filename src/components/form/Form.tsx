@@ -1,35 +1,43 @@
 import React from "react";
 import { FormControl, Button, TextField } from "@mui/material";
 import { faker } from "@faker-js/faker";
-import { Student, StudentClass } from "../../mockData";
+import { Student } from "../../mockData";
 
 export interface Props {
   createNewStudent: (student: Student) => void;
 }
 
-const Form: React.FunctionComponent<Props> = ({
-  createNewStudent,
-}) => {
-  const [name, setName] = React.useState<string>("");
-  const [schoolClass, setSchoolClass] = React.useState<string>("");
+const Form: React.FunctionComponent<Props> = ({ createNewStudent }) => {
+  const [name, setName] = React.useState("");
+  const [schoolClass, setSchoolClass] = React.useState("");
 
-  const handleStudentNameChange = React.useCallback((event: any) => {
-    setName(event.target.value);
-  }, []);
-  const handleStudentClassChange = React.useCallback((event: any) => {
-    setSchoolClass(event.target.value);
-  }, []);
+  const handleStudentNameChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+      setName(event.target.value);
+    },
+    []
+  );
+  const handleStudentClassChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+      setSchoolClass(event.target.value);
+    },
+    []
+  );
 
   const handleClick = React.useCallback(() => {
-    createNewStudent({
-      id: faker.datatype.uuid(),
-      name,
-      class: {
+    if (name !== "" || schoolClass !== "") {
+      createNewStudent({
         id: faker.datatype.uuid(),
-        name: schoolClass,
-        isEditing: false,
-      },
-    });
+        name,
+        class: {
+          id: faker.datatype.uuid(),
+          name: schoolClass,
+          isEditing: false,
+        },
+      });
+      setName("");
+      setSchoolClass("");
+    }
   }, [name, schoolClass, createNewStudent]);
 
   return (
@@ -50,7 +58,12 @@ const Form: React.FunctionComponent<Props> = ({
         onChange={handleStudentClassChange}
         value={schoolClass}
       />
-      <Button variant="outlined" sx={{ m: 1 }} onClick={handleClick}>
+      <Button
+        variant="outlined"
+        sx={{ m: 1 }}
+        onClick={handleClick}
+        disabled={name === "" || schoolClass === ""}
+      >
         Create New Student
       </Button>
     </FormControl>
