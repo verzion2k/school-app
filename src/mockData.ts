@@ -4,6 +4,7 @@ export interface Student {
   id: string;
   name: string;
   class: StudentClass;
+  isEditing?: boolean;
 }
 
 export interface StudentClass {
@@ -29,6 +30,7 @@ export function createRandomStudent(): Student {
     id: faker.datatype.uuid(),
     name: faker.name.findName(),
     class: createRandomStudentClass(),
+    isEditing: false,
   };
 }
 

@@ -2,8 +2,8 @@ import React from "react";
 import { Student, StudentClass, STUDENTS } from "./mockData";
 import List from "./components/list/List";
 import Form from "./components/form/Form";
+import SchoolClassList from "./components/schoolClassList/SchoolClassList";
 import { IconButton, TextField } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
 export interface FilterInput {
@@ -202,64 +202,118 @@ function App() {
     [filterInput.className, filterInput.studentName]
   );
 
-  const classChange = React.useCallback((id: string) => {
-    console.log(id);
-  }, []);
+  const toggleStudentEdit = React.useCallback(
+    (id: string) => {
+      const editedStudents = students.map((student) => {
+        if (student.id === id) {
+          return {
+            ...student,
+            isEditing: !student.isEditing,
+          };
+        }
+        return student;
+      });
+
+      const sortedEditedStudents = sortByStudentName(editedStudents);
+
+      setStudents(sortedEditedStudents);
+    },
+    [students, sortByStudentName]
+  );
+
+  const handleStudentEdit = React.useCallback(
+    (
+      student: Student,
+      event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
+    ) => {
+      const newStudentList = students.map((item) => {
+        if (item.id === student.id) {
+          const updatedItem = {
+            ...item,
+            name: event.target.value,
+            isEditing: true,
+          };
+
+          return updatedItem;
+        }
+        return item;
+      });
+
+      setStudents(newStudentList);
+    },
+    [students]
+  );
+
+  const handleEditStudentOnEnter = React.useCallback(
+    (id: string, event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter") {
+        toggleStudentEdit(id);
+      }
+    },
+    [toggleStudentEdit]
+  );
+
+  const handleEditStudentClass = React.useCallback(
+    (id: string, value: string) => {
+      const newStudentList = students.map((student) => {
+        if (student.id === id) {
+          return {
+            ...student,
+            class: {
+              ...student.class,
+              name: value,
+            },
+          };
+        }
+        return student;
+      });
+
+      setStudents(newStudentList);
+    },
+    [students]
+  );
 
   return (
     <div style={{ padding: "20px" }}>
       <h1>School APP</h1>
       <Form createNewStudent={createNewStudent} />
       <h2>Classes</h2>
-      {schoolClasses.map((schoolClass) => (
-        <div style={{ display: "flex" }} key={schoolClass.id}>
-          {schoolClass.isEditing ? (
-            <TextField
-              id="student-name"
-              label="Student name"
-              variant="outlined"
-              sx={{ m: 1 }}
-              onChange={(event) => handleEditClassChange(schoolClass, event)}
-              onKeyDown={(event) =>
-                handleEditClassOnEnter(schoolClass.id, event)
-              }
-              onBlur={() => toggleClassEditing(schoolClass.id)}
-              value={schoolClass.name}
-            />
-          ) : (
-            <p style={{ padding: "20px" }}>{schoolClass.name}</p>
-          )}
-          <IconButton onClick={() => toggleClassEditing(schoolClass.id)}>
-            <EditIcon />
-          </IconButton>
-          {renderDeleteIcon(schoolClass)}
-        </div>
-      ))}
-
-      <TextField
-        id="studentName"
-        name="studentName"
-        label="Search for Student"
-        variant="outlined"
-        sx={{ m: 1 }}
-        onChange={handleFilterStudents}
-        value={filterInput.studentName}
+      <SchoolClassList
+        classList={schoolClasses}
+        handleEdit={handleEditClassChange}
+        handleEditOnEnter={handleEditClassOnEnter}
+        toggleEditing={toggleClassEditing}
+        renderDeleteIcon={renderDeleteIcon}
       />
-
-      <TextField
-        id="className"
-        name="className"
-        label="Search for Class"
-        variant="outlined"
-        sx={{ m: 1 }}
-        onChange={handleFilterStudents}
-        value={filterInput.className}
-      />
-      <List
-        students={filterStudents(students)}
-        deleteStudent={deleteStudent}
-        classChange={classChange}
-      />
+      <div>
+        <TextField
+          id="studentName"
+          name="studentName"
+          label="Search for Student"
+          variant="outlined"
+          sx={{ m: 1 }}
+          onChange={handleFilterStudents}
+          value={filterInput.studentName}
+        />
+        <TextField
+          id="className"
+          name="className"
+          label="Search for Class"
+          variant="outlined"
+          sx={{ m: 1 }}
+          onChange={handleFilterStudents}
+          value={filterInput.className}
+        />
+        <List
+          students={filterStudents(students)}
+          schoolClasses={schoolClasses}
+          deleteStudent={deleteStudent}
+          toggleStudentEdit={toggleStudentEdit}
+          handleEditStudent={handleStudentEdit}
+          handleEditStudentOnEnter={handleEditStudentOnEnter}
+          handleEditStudentClass={handleEditStudentClass}
+        />
+      </div>
     </div>
   );
 }
